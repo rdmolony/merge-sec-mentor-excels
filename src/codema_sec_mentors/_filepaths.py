@@ -16,19 +16,14 @@ MENTOR_DIR = DATA_DIR / "mentors"
 # *****************
 
 
-def _get_mentor_excel_filepaths() -> List[Path]:
-
-    all_mentor_dir_excel_files = list(MENTOR_DIR.rglob("*.xlsx"))
-    return list(
-        set(
-            [
-                filepath
-                for filepath in all_mentor_dir_excel_files
-                for la in MENTOR_LAS
-                if la in filepath.stem
-            ]
-        )
-    )  # Using list(set()) as a hacky way of removing duplicate filepaths...
-
-
-MENTOR_EXCEL_FILEPATHS = _get_mentor_excel_filepaths()
+_all_mentor_dir_excel_files = list(MENTOR_DIR.rglob("*.xlsx"))
+MENTOR_EXCEL_FILEPATHS = list(
+    set(
+        [
+            filepath
+            for filepath in _all_mentor_dir_excel_files
+            for la in MENTOR_LAS
+            if la in filepath.stem
+        ]
+    )
+)  # Using list(set()) as a hacky way of removing duplicate filepaths...
