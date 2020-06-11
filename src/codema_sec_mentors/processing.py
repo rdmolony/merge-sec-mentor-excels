@@ -25,18 +25,20 @@ def process_mentor_excels() -> Flow:
     with Flow("Process SEC mentor excels") as flow:
 
         filepaths = _get_excel_filepaths(MENTOR_DIR)
-        hourly_overview_raw = _load_sec_activity_by_month_sheet_inferring_headers.map(
-            filepaths
-        )
 
-        hourly_overview_clean = (
-            _drop_empty_rows.map(hourly_overview_raw)
+        hourly_overview = (
+            _load_sec_activity_by_month_sheet_inferring_headers.map(filepaths)
+            >> _drop_empty_rows.map()
             >> _get_rlpdt_totals.map()
             >> _merge_mentor_dataframes
         )
+        _save_dataframe_to_excel(
+            hourly_overview, RESULTS_DIR, "mentor_hours.xlsx"
+        )
 
-        _save_merged_dataframe_to_excel(
-            hourly_overview_clean, RESULTS_DIR, "mentor_hours.xlsx"
+        mentors_monthly_hours = (
+            _load_sec_activity_by_month_sheet_inferring_headers.map(filepaths)
+            >>
         )
 
     return flow
@@ -60,6 +62,7 @@ def _get_excel_filepaths(directory) -> List[Path]:
             ]
         )
     )  # Using list(set()) as a hacky way of removing duplicate filepaths...
+
 
 
 @task
@@ -91,6 +94,17 @@ def _load_sec_activity_by_month_sheet_inferring_headers(filepath: Path) -> pd.Da
     return pd.read_excel(
         filepath, sheet_name=sheet_name, header=row_number - 1, engine="openpyxl"
     )
+
+
+@task
+def _save_dataframe_to_excel(
+    merged_df: pd.DataFrame, savedir: Path, filename: str
+) -> pd.DataFrame:
+
+    merged_df.to_excel(savedir / filename)
+
+# Hourly Overview
+# ---------------
 
 
 @task
@@ -126,9 +140,10 @@ def _merge_mentor_dataframes(excel_dfs: List[pd.DataFrame]) -> pd.DataFrame:
     return pd.concat(excel_dfs)
 
 
-@task
-def _save_merged_dataframe_to_excel(
-    merged_df: pd.DataFrame, savedir: Path, filename: str
-) -> pd.DataFrame:
 
-    merged_df.to_excel(savedir / filename)
+# Mentor hours
+# -------------
+
+
+@task
+def _calculate_
