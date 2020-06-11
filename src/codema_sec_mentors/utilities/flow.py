@@ -4,12 +4,12 @@ from prefect import Flow
 from prefect.core.task import Task
 
 from prefect.engine.state import State
-from prefect.engine.executors import LocalDaskExecutor
+from prefect.engine.executors import LocalDaskExecutor, DaskExecutor
 from prefect.utilities.debug import raise_on_exception
 
 
 def run_flow(
-    flow_function: Callable[[None], Flow], viz_path: Path = None,
+    flow_function: Callable[[None], Flow], viz_path: Path = None, parallel: bool = True
 ) -> Tuple[State, List[Task]]:
     """Runs all preprocessing prefect tasks and returns the flow state &
     a list of all tasks run
@@ -38,7 +38,11 @@ def run_flow(
     flow = flow_function()
     tasks = flow.get_tasks()
 
-    executor = LocalDaskExecutor()
+    if parallel:
+        executor = DaskExecutor()
+    else:
+        executor = LocalDaskExecutor()
+
     with raise_on_exception():
         state = flow.run(executor=executor)
 
