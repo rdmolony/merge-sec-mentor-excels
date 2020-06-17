@@ -4,7 +4,7 @@ from prefect import Flow
 from prefect.core.task import Task
 
 from prefect.engine.state import State
-from prefect.engine.executors import LocalDaskExecutor, DaskExecutor
+from prefect.engine.executors import LocalExecutor, DaskExecutor
 from prefect.utilities.debug import raise_on_exception
 
 
@@ -44,7 +44,7 @@ def run_flow(
     if parallel:
         executor = DaskExecutor()
     else:
-        executor = LocalDaskExecutor()
+        executor = LocalExecutor()
 
     with raise_on_exception():
         if parameters:

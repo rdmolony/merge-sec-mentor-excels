@@ -39,34 +39,34 @@ def process_mentor_excels() -> Flow:
         #     _load_sec_activity_by_month_sheet_inferring_headers.map(filepaths)
         #     >> _drop_empty_rows.map()
         #     >> _get_rlpdt_totals.map()
-        #     >> _merge_dataframes.map()
+        #     >> _merge_dataframes
         # )
         # _save_dataframe_to_excel(hourly_overview, RESULTS_DIR, "total_sec_hours.xlsx")
 
         month = Parameter("month")
-        # monthly_hours = (
-        #     _load_monthly_hours_from_sec_activity_by_month_sheet.map(
-        #         filepaths, unmapped(month)
-        #     )
-        #     >> _replace_question_mark_with_nan.map()
-        #     >> _drop_empty_rows.map()
-        #     >> _replace_empty_mentors_with_local_authority.map()
-        #     >> _replace_empty_numeric_cells_with_zeros.map()
-        #     >> _label_monthly_hours_as_planned_and_acheived.map()
-        #     >> _calculate_total_monthly_hours.map()
-        #     >> _merge_dataframes.map()
-        # )
         monthly_hours = (
-            _load_monthly_hours_from_sec_activity_by_month_sheet(
-                filepath, unmapped(month)
+            _load_monthly_hours_from_sec_activity_by_month_sheet.map(
+                filepaths, unmapped(month)
             )
-            >> _replace_question_mark_with_nan()
-            >> _drop_empty_rows()
-            >> _replace_empty_mentors_with_local_authority()
-            >> _replace_empty_numeric_cells_with_zeros()
-            >> _label_monthly_hours_as_planned_and_acheived()
-            >> _calculate_total_monthly_hours()
+            >> _replace_question_mark_with_nan.map()
+            >> _drop_empty_rows.map()
+            >> _replace_empty_mentors_with_local_authority.map()
+            >> _replace_empty_numeric_cells_with_zeros.map()
+            >> _label_monthly_hours_as_planned_and_acheived.map()
+            >> _calculate_total_monthly_hours.map()
+            >> _merge_dataframes
         )
+        # monthly_hours = (
+        #     _load_monthly_hours_from_sec_activity_by_month_sheet(
+        #         filepath, unmapped(month)
+        #     )
+        #     >> _replace_question_mark_with_nan()
+        #     >> _drop_empty_rows()
+        #     >> _replace_empty_mentors_with_local_authority()
+        #     >> _replace_empty_numeric_cells_with_zeros()
+        #     >> _label_monthly_hours_as_planned_and_acheived()
+        #     >> _calculate_total_monthly_hours()
+        # )
         _save_dataframe_to_excel(monthly_hours, RESULTS_DIR, "monthly_hours.xlsx")
 
         monthly_hours_by_mentor = _get_total_monthly_hours_by_mentor(monthly_hours)
@@ -201,18 +201,11 @@ def _find_cells_corresponding_to_month(sheet: Worksheet, month_number: int) -> C
     return [cell for cell in all_month_cells if cell.value.month == month_number][0]
 
 
-def _find_sec_name_column(sheet: Worksheet) -> int:
+def _find_sec_name_cell(sheet: Worksheet) -> Cell:
 
-    import ipdb
-
-    ipdb.set_trace()
-
-    # all_month_cells = [
-    #     cell
-    #     for column in sheet.columns
-    #     for cell in column
-    #     if isinstance(cell.value, datetime)
-    # ]
+    return [
+        cell for column in sheet.columns for cell in column if cell.value == "SEC Name"
+    ][0]
 
 
 def _extract_local_authority_name_from_filepath(filepath: Path) -> str:
@@ -234,9 +227,9 @@ def _load_monthly_hours_from_sec_activity_by_month_sheet(
 
     header_row = month_cell.row + 1
     monthly_mentor_col = month_cell.column - 2
-    sec_name_col = _find_sec_name_column(sheet)
+    sec_name_col = _find_sec_name_cell(sheet).column - 1
 
-    usecols = [0] + [*range(monthly_mentor_col, monthly_mentor_col + 10)]
+    usecols = [sec_name_col] + [*range(monthly_mentor_col, monthly_mentor_col + 10)]
 
     monthly_hours = pd.read_excel(
         filepath,
