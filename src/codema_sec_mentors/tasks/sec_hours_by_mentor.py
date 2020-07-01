@@ -15,36 +15,6 @@ import pandas as pd
 from prefect import task
 
 
-def _convert_month_string_to_number(month: str) -> int:
-
-    return strptime(month, "%B").tm_mon
-
-
-def _find_cells_corresponding_to_month(sheet: Worksheet, month_number: int) -> Cell:
-
-    all_month_cells = [
-        cell
-        for column in sheet.columns
-        for cell in column
-        if isinstance(cell.value, datetime)
-    ]
-
-    return [cell for cell in all_month_cells if cell.value.month == month_number][0]
-
-
-def _find_sec_name_cell(sheet: Worksheet) -> Cell:
-
-    return [
-        cell for column in sheet.columns for cell in column if cell.value == "SEC Name"
-    ][0]
-
-
-def _extract_local_authority_name_from_filepath(filepath: Path) -> str:
-
-    regex = re.compile(r"SEC - CM - (\w+)")
-    return regex.findall(filepath.stem)[0]
-
-
 @task
 def _load_monthly_hours_from_sec_activity_by_month_sheet(
     filepath: Path, month: str
@@ -75,6 +45,36 @@ def _load_monthly_hours_from_sec_activity_by_month_sheet(
     }
 
     return monthly_hours
+
+
+def _convert_month_string_to_number(month: str) -> int:
+
+    return strptime(month, "%B").tm_mon
+
+
+def _find_cells_corresponding_to_month(sheet: Worksheet, month_number: int) -> Cell:
+
+    all_month_cells = [
+        cell
+        for column in sheet.columns
+        for cell in column
+        if isinstance(cell.value, datetime)
+    ]
+
+    return [cell for cell in all_month_cells if cell.value.month == month_number][0]
+
+
+def _find_sec_name_cell(sheet: Worksheet) -> Cell:
+
+    return [
+        cell for column in sheet.columns for cell in column if cell.value == "SEC Name"
+    ][0]
+
+
+def _extract_local_authority_name_from_filepath(filepath: Path) -> str:
+
+    regex = re.compile(r"SEC - CM - (\w+)")
+    return regex.findall(filepath.stem)[0]
 
 
 @task
