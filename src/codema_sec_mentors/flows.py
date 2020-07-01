@@ -10,13 +10,13 @@ from codema_sec_mentors.tasks.general import (
     _get_excel_filepaths,
     _get_excel_filepath,
     _replace_question_marks_with_nan,
-    _drop_empty_rows,
+    _drop_empty_rows_via_column,
     _concatenate_data_from_multiple_sheets,
 )
 from codema_sec_mentors.tasks.recreate_master_excel import (
     _create_master_excel_from_template,
-    _load_sec_activity_by_month_sheets_inferring_headers,
-    _save_sec_activity_by_month_to_master_excel_openpyxl,
+    find_header_row_and_load_sheet_to_pandas,
+    _save_to_master_excel_sheet,
 )
 
 """ Set Reload to Deep Reload for recursive module reloading...
@@ -41,13 +41,37 @@ def recreate_master_excel_flow() -> Flow:
         _create_master_excel_from_template(TEMPLATE_MASTER_EXCEL, MASTER_EXCEL)
 
         sec_by_month_sheet_data = (
-            _load_sec_activity_by_month_sheets_inferring_headers.map(filepaths)
+            find_header_row_and_load_sheet_to_pandas.map(
+                filepaths,
+                sheet_name=unmapped("SEC activity by month"),
+                cell_name_in_header_row=unmapped("SEC Name"),
+            )
             >> _replace_question_marks_with_nan.map
-            >> _drop_empty_rows.map
+            >> _drop_empty_rows_via_column.map(unmapped("SEC Name"))
             >> _concatenate_data_from_multiple_sheets
         )
-        _save_sec_activity_by_month_to_master_excel_openpyxl(
-            sec_by_month_sheet_data, MASTER_EXCEL
+        _save_to_master_excel_sheet(
+            sec_by_month_sheet_data,
+            MASTER_EXCEL,
+            sheet_name="SEC activity by month",
+            startrow=6,
+        )
+
+        other_activity_by_month_data = (
+            find_header_row_and_load_sheet_to_pandas.map(
+                filepaths,
+                sheet_name=unmapped("Other activity by month"),
+                cell_name_in_header_row=unmapped("Region / County"),
+            )
+            >> _replace_question_marks_with_nan.map
+            >> _drop_empty_rows_via_column.map(unmapped("Region / County"))
+            >> _concatenate_data_from_multiple_sheets
+        )
+        _save_to_master_excel_sheet(
+            other_activity_by_month_data,
+            MASTER_EXCEL,
+            sheet_name="Other activity by month",
+            startrow=6,
         )
 
     return flow
