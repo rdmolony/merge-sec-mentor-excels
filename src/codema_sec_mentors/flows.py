@@ -14,19 +14,19 @@ from codema_sec_mentors.tasks.general import (
     _concatenate_data_from_multiple_sheets,
 )
 from codema_sec_mentors.tasks.recreate_master_excel import (
-    _copy_guidance_sheet,
+    _create_master_excel_from_template,
     _load_sec_activity_by_month_sheets_inferring_headers,
-    _save_sec_activity_by_month_to_excel,
+    _save_sec_activity_by_month_to_master_excel_openpyxl,
 )
 
-# Set Reload to Deep Reload for recursive module reloading...
+""" Set Reload to Deep Reload for recursive module reloading...
 import builtins
 from IPython.lib import deepreload
-
 builtins.reload = deepreload.reload
+"""
 
 RESULTS_DIR = DATA_DIR / "results"
-TODAYS_MASTER_EXCEL = (
+MASTER_EXCEL = (
     DATA_DIR / "results" / f"master-{datetime.today().strftime('%d-%m-%y')}.xlsx"
 )
 TEMPLATE_MASTER_EXCEL = DATA_DIR / "master_template.xlsx"
@@ -38,9 +38,7 @@ def recreate_master_excel_flow() -> Flow:
     with Flow("Recreate Master Excel") as flow:
 
         filepaths = _get_excel_filepaths(MENTOR_DIR, MENTOR_LAS)
-        # filepath = _get_excel_filepath(MENTOR_DIR, 1)
-
-        _copy_guidance_sheet(TEMPLATE_MASTER_EXCEL, TODAYS_MASTER_EXCEL)
+        _create_master_excel_from_template(TEMPLATE_MASTER_EXCEL, MASTER_EXCEL)
 
         sec_by_month_sheet_data = (
             _load_sec_activity_by_month_sheets_inferring_headers.map(filepaths)
@@ -48,8 +46,8 @@ def recreate_master_excel_flow() -> Flow:
             >> _drop_empty_rows.map
             >> _concatenate_data_from_multiple_sheets
         )
-        _save_sec_activity_by_month_to_excel(
-            sec_by_month_sheet_data, TODAYS_MASTER_EXCEL
+        _save_sec_activity_by_month_to_master_excel_openpyxl(
+            sec_by_month_sheet_data, MASTER_EXCEL
         )
 
     return flow

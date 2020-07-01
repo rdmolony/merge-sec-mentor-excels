@@ -47,7 +47,7 @@ def _replace_question_marks_with_nan(df: pd.DataFrame) -> pd.DataFrame:
 @task
 def _drop_empty_rows(df: pd.DataFrame) -> pd.DataFrame:
 
-    return df.dropna(how="all")
+    return df.dropna(subset=["SEC Name"])
 
 
 @task
