@@ -21,33 +21,6 @@ def _create_master_excel_from_template(template: Path, master: Path) -> None:
     copyfile(template, master)
 
 
-def _extract_local_authority_name_from_filepath(filepath: Path) -> str:
-
-    regex = re.compile(r"SEC - CM - (\w+)")
-    return regex.findall(filepath.stem)[0]
-
-
-@task
-def _save_to_master_excel_sheet(
-    merged_df: pd.DataFrame, filepath: Path, sheet_name: str, startrow: int,
-) -> pd.DataFrame:
-
-    # https://stackoverflow.com/questions/20219254/how-to-write-to-an-existing-excel-file-without-overwriting-data-using-pandas
-    book = load_workbook(filepath)
-    writer = pd.ExcelWriter(filepath, engine="openpyxl")
-    writer.book = book
-    writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
-
-    # import ipdb
-
-    # ipdb.set_trace()
-
-    merged_df.to_excel(
-        writer, sheet_name=sheet_name, startrow=startrow, index=False,
-    )
-    writer.save()
-
-
 @task
 def find_header_row_and_load_sheet_to_pandas(
     filepath: Path, sheet_name: str, cell_name_in_header_row: str
@@ -55,7 +28,7 @@ def find_header_row_and_load_sheet_to_pandas(
 
     sheet = load_workbook(filepath)[sheet_name]
 
-    # -1 as Pandas is indexed at zero & Excel is indexed at one
+    # Subtract 1 as Pandas is indexed at zero & Excel is indexed at one
     header_row = _find_cell(sheet, cell_name_in_header_row).row - 1
 
     sec_activity_by_month = pd.read_excel(
@@ -74,3 +47,29 @@ def _find_cell(sheet: Worksheet, name: str) -> Cell:
     return [cell for column in sheet.columns for cell in column if cell.value == name][
         0
     ]
+
+
+def _extract_local_authority_name_from_filepath(filepath: Path) -> str:
+
+    regex = re.compile(r"SEC - CM - (\w+)")
+    return regex.findall(filepath.stem)[0]
+
+
+@task
+def _save_to_master_excel_sheet(
+    merged_df: pd.DataFrame, filepath: Path, sheet_name: str, startrow: int,
+) -> pd.DataFrame:
+
+    # Subtract 1 as Pandas is indexed at zero & Excel is indexed at one
+    startrow = startrow - 1
+
+    # https://stackoverflow.com/questions/20219254/how-to-write-to-an-existing-excel-file-without-overwriting-data-using-pandas
+    book = load_workbook(filepath)
+    writer = pd.ExcelWriter(filepath, engine="openpyxl")
+    writer.book = book
+    writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
+
+    merged_df.to_excel(
+        writer, sheet_name=sheet_name, startrow=startrow, index=False,
+    )
+    writer.save()

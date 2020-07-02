@@ -33,46 +33,71 @@ TEMPLATE_MASTER_EXCEL = DATA_DIR / "master_template.xlsx"
 
 
 @pipes
-def recreate_master_excel_flow() -> Flow:
+def flow_recreate_master_excel() -> Flow:
 
     with Flow("Recreate Master Excel") as flow:
 
         filepaths = _get_excel_filepaths(MENTOR_DIR, MENTOR_LAS)
-        _create_master_excel_from_template(TEMPLATE_MASTER_EXCEL, MASTER_EXCEL)
 
-        sec_by_month_sheet_data = (
-            find_header_row_and_load_sheet_to_pandas.map(
-                filepaths,
-                sheet_name=unmapped("SEC activity by month"),
-                cell_name_in_header_row=unmapped("SEC Name"),
-            )
-            >> _replace_question_marks_with_nan.map
+        create_master_excel = _create_master_excel_from_template(
+            TEMPLATE_MASTER_EXCEL, MASTER_EXCEL
+        )
+
+        load_sec_by_month_sheet = find_header_row_and_load_sheet_to_pandas.map(
+            filepaths,
+            sheet_name=unmapped("SEC activity by month"),
+            cell_name_in_header_row=unmapped("SEC Name"),
+        )
+
+        clean_sec_by_month = (
+            _replace_question_marks_with_nan.map(load_sec_by_month_sheet)
             >> _drop_empty_rows_via_column.map(unmapped("SEC Name"))
             >> _concatenate_data_from_multiple_sheets
         )
-        _save_to_master_excel_sheet(
-            sec_by_month_sheet_data,
+
+        save_sec_by_month = _save_to_master_excel_sheet(
+            clean_sec_by_month,
             MASTER_EXCEL,
             sheet_name="SEC activity by month",
-            startrow=6,
+            startrow=7,
+        ).set_upstream(create_master_excel)
+
+        load_other_activity_by_month_sheet = find_header_row_and_load_sheet_to_pandas.map(
+            filepaths,
+            sheet_name=unmapped("Other activity by month"),
+            cell_name_in_header_row=unmapped("Region / County"),
+            upstream_tasks=[load_sec_by_month_sheet],
         )
 
-        other_activity_by_month_data = (
-            find_header_row_and_load_sheet_to_pandas.map(
-                filepaths,
-                sheet_name=unmapped("Other activity by month"),
-                cell_name_in_header_row=unmapped("Region / County"),
-            )
-            >> _replace_question_marks_with_nan.map
+        clean_other_activity_by_month = (
+            _replace_question_marks_with_nan.map(load_other_activity_by_month_sheet)
             >> _drop_empty_rows_via_column.map(unmapped("Region / County"))
             >> _concatenate_data_from_multiple_sheets
         )
-        _save_to_master_excel_sheet(
-            other_activity_by_month_data,
+
+        save_other_activity_by_month = _save_to_master_excel_sheet(
+            clean_other_activity_by_month,
             MASTER_EXCEL,
             sheet_name="Other activity by month",
-            startrow=6,
+            startrow=7,
+        ).set_upstream(save_sec_by_month)
+
+        load_summary_sheet = find_header_row_and_load_sheet_to_pandas.map(
+            filepaths,
+            sheet_name=unmapped("Summary"),
+            cell_name_in_header_row=unmapped("SEC Name"),
+            upstream_tasks=[load_other_activity_by_month_sheet],
         )
+
+        clean_summary = (
+            _replace_question_marks_with_nan.map(load_summary_sheet)
+            >> _drop_empty_rows_via_column.map(unmapped("SEC Name"))
+            >> _concatenate_data_from_multiple_sheets
+        )
+
+        save_summary = _save_to_master_excel_sheet(
+            clean_summary, MASTER_EXCEL, sheet_name="Summary", startrow=4,
+        ).set_upstream(save_other_activity_by_month)
 
     return flow
 
