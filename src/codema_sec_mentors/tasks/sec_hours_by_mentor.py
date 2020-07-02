@@ -16,6 +16,26 @@ from prefect import task
 
 
 @task
+def _find_date_cells_in_sheet(filepath: Path, sheet_name: Path) -> pd.DataFrame:
+
+    sheet = load_workbook(filepath)[sheet_name]
+
+    return _find_cells_corresponding_to_month(sheet, month_number)
+
+
+def _find_cells_corresponding_to_dates(sheet: Worksheet, month_number: int) -> Cell:
+
+    all_date_cells = [
+        cell
+        for column in sheet.columns
+        for cell in column
+        if isinstance(cell.value, datetime)
+    ]
+
+    return all_date_cells
+
+
+@task
 def _load_monthly_hours_from_sec_activity_by_month_sheet(
     filepath: Path, month: str
 ) -> pd.DataFrame:

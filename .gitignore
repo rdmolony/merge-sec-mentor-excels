@@ -75,6 +75,10 @@ target/
 /plots/*
 /logs/*
 /results/*
+*.txt
+*.json
+*.xlsx
+*.xlx
 
 # exclude all cached files
 .mypy_cache/

@@ -78,13 +78,30 @@ def _save_to_master_excel_sheet(
 @task
 def _extract_summary_columns(merged_df: pd.DataFrame) -> pd.DataFrame:
 
-    return merged_df[
-        [
-            "SEC Name",
-            "L-P-D",
-            "Maximum allocation of CM days this year",
-            "CM days completed to date this year",
-            "% of allocation reached",
-        ]
+    summary_columns = [
+        "SEC Name",
+        "L-P-D",
+        "Maximum allocation of CM days this year",
+        "CM days completed to date this year",
+        "% of allocation reached",
     ]
 
+    return merged_df[summary_columns]
+
+
+@task
+def _extract_sec_contacts_columns(merged_df: pd.DataFrame) -> pd.DataFrame:
+
+    sec_contacts_columns = [
+        "Name of group/SEC",
+        "County",
+        "Address",
+        "Address 1",
+        "Address 2",
+        "Primary contact",
+        "Phone no.",
+        "Email",
+        "SEAI ID",
+    ]
+
+    return merged_df[sec_contacts_columns]
