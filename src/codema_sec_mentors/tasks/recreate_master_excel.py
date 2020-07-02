@@ -73,3 +73,18 @@ def _save_to_master_excel_sheet(
         writer, sheet_name=sheet_name, startrow=startrow, index=False,
     )
     writer.save()
+
+
+@task
+def _extract_summary_columns(merged_df: pd.DataFrame) -> pd.DataFrame:
+
+    return merged_df[
+        [
+            "SEC Name",
+            "L-P-D",
+            "Maximum allocation of CM days this year",
+            "CM days completed to date this year",
+            "% of allocation reached",
+        ]
+    ]
+

@@ -17,6 +17,7 @@ from codema_sec_mentors.tasks.recreate_master_excel import (
     _create_master_excel_from_template,
     find_header_row_and_load_sheet_to_pandas,
     _save_to_master_excel_sheet,
+    _extract_summary_columns,
 )
 
 """ Set Reload to Deep Reload for recursive module reloading...
@@ -43,6 +44,7 @@ def flow_recreate_master_excel() -> Flow:
             TEMPLATE_MASTER_EXCEL, MASTER_EXCEL
         )
 
+        # ETL SEC by month sheet
         load_sec_by_month_sheet = find_header_row_and_load_sheet_to_pandas.map(
             filepaths,
             sheet_name=unmapped("SEC activity by month"),
@@ -62,6 +64,7 @@ def flow_recreate_master_excel() -> Flow:
             startrow=7,
         ).set_upstream(create_master_excel)
 
+        # ETL Other activity by month sheet
         load_other_activity_by_month_sheet = find_header_row_and_load_sheet_to_pandas.map(
             filepaths,
             sheet_name=unmapped("Other activity by month"),
@@ -82,6 +85,7 @@ def flow_recreate_master_excel() -> Flow:
             startrow=7,
         ).set_upstream(save_sec_by_month)
 
+        # ETL Summary sheet
         load_summary_sheet = find_header_row_and_load_sheet_to_pandas.map(
             filepaths,
             sheet_name=unmapped("Summary"),
@@ -93,11 +97,31 @@ def flow_recreate_master_excel() -> Flow:
             _replace_question_marks_with_nan.map(load_summary_sheet)
             >> _drop_empty_rows_via_column.map(unmapped("SEC Name"))
             >> _concatenate_data_from_multiple_sheets
+            >> _extract_summary_columns
         )
 
         save_summary = _save_to_master_excel_sheet(
             clean_summary, MASTER_EXCEL, sheet_name="Summary", startrow=4,
         ).set_upstream(save_other_activity_by_month)
+
+        # ETL SEC contacts sheet
+        load_sec_contacts_sheet = find_header_row_and_load_sheet_to_pandas.map(
+            filepaths,
+            sheet_name=unmapped("SEC contacts"),
+            cell_name_in_header_row=unmapped("Name of group/SEC"),
+            upstream_tasks=[load_summary_sheet],
+        )
+
+        clean_sec_contacts = (
+            _replace_question_marks_with_nan.map(load_sec_contacts_sheet)
+            >> _drop_empty_rows_via_column.map(unmapped("Name of group/SEC"))
+            >> _concatenate_data_from_multiple_sheets
+            >> _extract_summary_columns
+        )
+
+        save_sec_contacts = _save_to_master_excel_sheet(
+            clean_sec_contacts, MASTER_EXCEL, sheet_name="SEC contacts", startrow=4,
+        ).set_upstream(save_summary)
 
     return flow
 
