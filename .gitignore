@@ -71,14 +71,10 @@ target/
 
 # exclude data from source control by default
 /data/*
-/models/*
-/plots/*
-/logs/*
-/results/*
 *.txt
 *.json
-*.xlsx
-*.xlx
+*.csv
+!tests/reference_data/*.csv
 
 # exclude all cached files
 .mypy_cache/
