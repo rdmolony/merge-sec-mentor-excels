@@ -41,38 +41,20 @@ def _fillna_to_zero_in_numeric_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 
 @task
-def transform_sec_activity_by_month_sheet(
-    sec_activity_by_month: List[pd.DataFrame],
+def transform_sheet(
+    excel_sheets_raw: List[pd.DataFrame], on_column: str,
 ) -> pd.DataFrame:
 
-    sec_activity_by_month = [
-        df.dropna(subset=["Unnamed: 1"]).pipe(_replace_header_with_first_row)
-        for df in sec_activity_by_month
+    excel_sheets_clean = [
+        df.dropna(subset=[on_column]).pipe(_replace_header_with_first_row)
+        for df in excel_sheets_raw
     ]
 
     return (
-        pd.concat(sec_activity_by_month)
+        pd.concat(excel_sheets_clean)
         .reset_index(drop=True)
         .replace(["?", " "], np.nan)
         .pipe(_rename_columns_to_unique_names)
         .pipe(_fillna_to_zero_in_numeric_columns)
     )
 
-
-@task
-def transform_other_activity_by_month_sheet(
-    sec_activity_by_month: List[pd.DataFrame],
-) -> pd.DataFrame:
-
-    sec_activity_by_month = [
-        df.dropna(subset=["Unnamed: 0"]).pipe(_replace_header_with_first_row)
-        for df in sec_activity_by_month
-    ]
-
-    return (
-        pd.concat(sec_activity_by_month)
-        .reset_index(drop=True)
-        .replace(["?", " "], np.nan)
-        .pipe(_rename_columns_to_unique_names)
-        .pipe(_fillna_to_zero_in_numeric_columns)
-    )
