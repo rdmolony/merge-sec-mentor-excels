@@ -1,12 +1,16 @@
 from collections import defaultdict
 from typing import Dict, List
 
+import icontract
 import numpy as np
 import pandas as pd
 import prefect
 from prefect import task
 
 
+@icontract.ensure(
+    lambda result: np.nan not in result.columns, "Empty value in columns..."
+)
 def _replace_header_with_first_row(df: pd.DataFrame) -> pd.DataFrame:
 
     df.columns = df.iloc[0]

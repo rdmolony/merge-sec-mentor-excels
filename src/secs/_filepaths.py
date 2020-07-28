@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import List
 
-from codema_sec_mentors._globals import MENTOR_LAS
 
 BASE_DIR = Path(__file__).parents[2]
 

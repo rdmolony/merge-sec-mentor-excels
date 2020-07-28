@@ -16,3 +16,4 @@ def test_get_mentor_excel_filepaths() -> None:
     expected_output = ["SEC - CM - DCC", "SEC - CM - DLR"]
 
     assert output_stems == expected_output
+

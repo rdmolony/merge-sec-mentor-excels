@@ -5,6 +5,7 @@ from cytoolz.dicttoolz import merge_with
 
 # from toolz.dicttoolz import merge_with
 import icontract
+import numpy as np
 import pandas as pd
 from prefect import task
 
@@ -12,8 +13,17 @@ from prefect import task
 @task
 def get_mentor_excel_filepaths(dirpath: Path) -> List[Path]:
 
+    import ipdb
+
+    ipdb.set_trace()
     # get all excel spreadsheets in mentor dir but the test example ...
-    return [file for file in dirpath.rglob("*.xlsx") if file.stem != "test"]
+    # return [file for file in dirpath.rglob("*.xlsx") if file.stem not in ["test", "$~"]]
+
+    return [
+        file
+        for file in dirpath.rglob("*.xlsx")
+        if not any(to_ignore in file.stem for to_ignore in ["test", "~$"])
+    ]
 
 
 @task
