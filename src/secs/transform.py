@@ -33,6 +33,13 @@ def _rename_columns_to_unique_names(df: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+def _fillna_to_zero_in_numeric_columns(df: pd.DataFrame) -> pd.DataFrame:
+
+    numeric_columns = df.convert_dtypes().select_dtypes(np.number)
+    df.loc[:, numeric_columns.columns] = numeric_columns.fillna(0)
+    return df
+
+
 @task
 def transform_sec_activity_by_month_sheet(
     sec_activity_by_month: List[pd.DataFrame],
@@ -45,7 +52,27 @@ def transform_sec_activity_by_month_sheet(
 
     return (
         pd.concat(sec_activity_by_month)
-        .reset_index()
-        .replace({"?": np.nan})
+        .reset_index(drop=True)
+        .replace(["?", " "], np.nan)
         .pipe(_rename_columns_to_unique_names)
+        .pipe(_fillna_to_zero_in_numeric_columns)
+    )
+
+
+@task
+def transform_other_activity_by_month_sheet(
+    sec_activity_by_month: List[pd.DataFrame],
+) -> pd.DataFrame:
+
+    sec_activity_by_month = [
+        df.dropna(subset=["Unnamed: 0"]).pipe(_replace_header_with_first_row)
+        for df in sec_activity_by_month
+    ]
+
+    return (
+        pd.concat(sec_activity_by_month)
+        .reset_index(drop=True)
+        .replace(["?", " "], np.nan)
+        .pipe(_rename_columns_to_unique_names)
+        .pipe(_fillna_to_zero_in_numeric_columns)
     )
