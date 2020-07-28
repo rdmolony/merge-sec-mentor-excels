@@ -3,8 +3,12 @@ import datetime
 import prefect
 from prefect import Flow
 
-from secs.extract import get_mentor_excel_filepaths, read_mentor_excel_to_dict
-from secs.transform import transform_mentor_excels
+from secs.extract import (
+    get_mentor_excel_filepaths,
+    read_excel_to_dict,
+    regroup_excels_by_sheet,
+)
+from secs.transform import transform_sec_activity_by_month_sheet
 from secs._filepaths import DATA_DIR, MENTOR_DIR
 
 TODAY = datetime.datetime.today()
@@ -18,6 +22,10 @@ def etl() -> Flow:
     with Flow("Extract, Transform & Load Mentor Excels") as flow:
 
         mentor_filepaths = get_mentor_excel_filepaths(MENTOR_DIR)
-        mentor_excels_mapped = read_mentor_excel.map(mentor_filepaths)
+        mentor_excels = read_excel_to_dict.map(mentor_filepaths)
+        mentor_excels_by_sheet = regroup_excels_by_sheet(mentor_excels)
 
-        mentor_excel_sheets = transform_mentor_excels(mentor_excel_sheets)
+        sec_activity_by_month = transform_sec_activity_by_month_sheet(
+            mentor_excels_by_sheet["SEC activity by month"]
+        )
+

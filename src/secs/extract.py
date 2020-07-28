@@ -17,13 +17,13 @@ def get_mentor_excel_filepaths(dirpath: Path) -> List[Path]:
 
 
 @task
-def read_mentor_excel(filepath: Path) -> Dict[str, pd.DataFrame]:
+def read_excel_to_dict(filepath: Path) -> Dict[str, pd.DataFrame]:
 
     return pd.read_excel(filepath, sheet_name=None)
 
 
 @task
-def group_mentor_excels_by_sheet(
+def regroup_excels_by_sheet(
     local_authority_excels: List[Dict[str, pd.DataFrame]]
 ) -> Dict[str, pd.DataFrame]:
 

@@ -1,20 +1,51 @@
-from typing import Dict
+from collections import defaultdict
+from typing import Dict, List
 
+import numpy as np
 import pandas as pd
 import prefect
 from prefect import task
 
 
-def _clean_data(df: pd.DataFrame, ref_column: str) -> pd.DataFrame:
+def _replace_header_with_first_row(df: pd.DataFrame) -> pd.DataFrame:
 
-    return df.replace({"?": np.nan}).dropna(subset=[ref_column])
+    df.columns = df.iloc[0]
+    df = df.iloc[1:].reset_index(drop=True)
+    df.columns.name = ""
+
+    return df
+
+
+def _rename_columns_to_unique_names(df: pd.DataFrame) -> pd.DataFrame:
+
+    renamer = defaultdict()
+
+    for col in df.columns[df.columns.duplicated(keep=False)].tolist():
+        if col not in renamer:
+            renamer[col] = [col + "_0"]
+        else:
+            renamer[col].append(col + "_" + str(len(renamer[col])))
+
+    return df.rename(
+        columns=lambda column_name: renamer[column_name].pop(0)
+        if column_name in renamer
+        else column_name
+    )
 
 
 @task
-def transform_mentor_excels(
-    mentor_excels_mapped: Dict[str, pd.DataFrame]
-) -> Dict[str, pd.DataFrame]:
+def transform_sec_activity_by_month_sheet(
+    sec_activity_by_month: List[pd.DataFrame],
+) -> pd.DataFrame:
 
-    import ipdb
+    sec_activity_by_month = [
+        df.dropna(subset=["Unnamed: 1"]).pipe(_replace_header_with_first_row)
+        for df in sec_activity_by_month
+    ]
 
-    ipdb.set_trace()
+    return (
+        pd.concat(sec_activity_by_month)
+        .reset_index()
+        .replace({"?": np.nan})
+        .pipe(_rename_columns_to_unique_names)
+    )
