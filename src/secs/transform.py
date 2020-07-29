@@ -11,12 +11,20 @@ from prefect import task
 @icontract.ensure(
     lambda result: np.nan not in result.columns, "Empty value in columns..."
 )
-def _replace_header_with_first_row(df: pd.DataFrame) -> pd.DataFrame:
+def _replace_header_with_row(df: pd.DataFrame, header_row: int) -> pd.DataFrame:
 
-    df.columns = df.iloc[0]
-    df = df.iloc[1:].reset_index(drop=True)
+    # Convert Excel row number into equiv pandas row number
+    # (i.e. zero indexed and skip one row for header)
+    header_row -= 2
+    new_first_row = header_row + 1
+
+    df.columns = df.iloc[header_row]
+    df = df.iloc[new_first_row:].reset_index(drop=True)
     df.columns.name = ""
 
+    import ipdb
+
+    ipdb.set_trace()
     return df
 
 
@@ -46,12 +54,11 @@ def _fillna_to_zero_in_numeric_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 @task
 def transform_sheet(
-    excel_sheets_raw: List[pd.DataFrame], on_column: str,
+    excel_sheets_raw: List[pd.DataFrame], header_row: int,
 ) -> pd.DataFrame:
 
     excel_sheets_clean = [
-        df.dropna(subset=[on_column]).pipe(_replace_header_with_first_row)
-        for df in excel_sheets_raw
+        df.pipe(_replace_header_with_row, header_row) for df in excel_sheets_raw
     ]
 
     return (
@@ -59,6 +66,7 @@ def transform_sheet(
         .reset_index(drop=True)
         .replace(["?", " "], np.nan)
         .pipe(_rename_columns_to_unique_names)
+        .dropna()
         .pipe(_fillna_to_zero_in_numeric_columns)
     )
 

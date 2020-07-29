@@ -13,9 +13,6 @@ from prefect import task
 @task
 def get_mentor_excel_filepaths(dirpath: Path) -> List[Path]:
 
-    import ipdb
-
-    ipdb.set_trace()
     # get all excel spreadsheets in mentor dir but the test example ...
     # return [file for file in dirpath.rglob("*.xlsx") if file.stem not in ["test", "$~"]]
 
