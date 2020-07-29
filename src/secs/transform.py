@@ -8,10 +8,9 @@ import prefect
 from prefect import task
 
 
-@icontract.ensure(
-    lambda result: np.nan not in result.columns, "Empty value in columns..."
-)
 def _replace_header_with_row(df: pd.DataFrame, header_row: int) -> pd.DataFrame:
+
+    df = df.copy()
 
     # Convert Excel row number into equiv pandas row number
     # (i.e. zero indexed and skip one row for header)
@@ -22,14 +21,12 @@ def _replace_header_with_row(df: pd.DataFrame, header_row: int) -> pd.DataFrame:
     df = df.iloc[new_first_row:].reset_index(drop=True)
     df.columns.name = ""
 
-    import ipdb
-
-    ipdb.set_trace()
     return df
 
 
 def _rename_columns_to_unique_names(df: pd.DataFrame) -> pd.DataFrame:
 
+    df = df.copy()
     renamer = defaultdict()
 
     for col in df.columns[df.columns.duplicated(keep=False)].tolist():
@@ -47,26 +44,44 @@ def _rename_columns_to_unique_names(df: pd.DataFrame) -> pd.DataFrame:
 
 def _fillna_to_zero_in_numeric_columns(df: pd.DataFrame) -> pd.DataFrame:
 
+    df = df.copy()
     numeric_columns = df.convert_dtypes().select_dtypes(np.number)
     df.loc[:, numeric_columns.columns] = numeric_columns.fillna(0)
     return df
 
 
+def _drop_rows_where_first_column_empty(df: pd.DataFrame) -> pd.DataFrame:
+
+    df = df.copy()
+
+    first_column = df.columns[0]
+    df = df.dropna(subset=[first_column])
+
+    return df
+
+
 @task
+@icontract.ensure(lambda result: not result.empty, "Output DataFrame must not be empty")
 def transform_sheet(
     excel_sheets_raw: List[pd.DataFrame], header_row: int,
 ) -> pd.DataFrame:
 
     excel_sheets_clean = [
-        df.pipe(_replace_header_with_row, header_row) for df in excel_sheets_raw
+        df.copy()
+        .pipe(_replace_header_with_row, header_row)
+        .pipe(_rename_columns_to_unique_names)
+        .replace("?", np.nan)
+        .replace(" ", np.nan)
+        .replace(0, np.nan)
+        .pipe(_drop_rows_where_first_column_empty)
+        # .pipe(_fillna_to_zero_in_numeric_columns)
+        for df in excel_sheets_raw
     ]
 
-    return (
-        pd.concat(excel_sheets_clean)
-        .reset_index(drop=True)
-        .replace(["?", " "], np.nan)
-        .pipe(_rename_columns_to_unique_names)
-        .dropna()
-        .pipe(_fillna_to_zero_in_numeric_columns)
-    )
+    df = pd.concat(excel_sheets_clean).reset_index(drop=True)
 
+    import ipdb
+
+    ipdb.set_trace()
+
+    return df

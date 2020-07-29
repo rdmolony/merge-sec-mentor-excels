@@ -35,27 +35,27 @@ def etl() -> Flow:
         mentor_excels_by_sheet = regroup_excels_by_sheet(mentor_excels)
 
         transform_sheet(
-            mentor_excels_by_sheet["SEC activity by month"], "Unnamed: 1"
+            mentor_excels_by_sheet["SEC activity by month"], header_row=7
         ) >> save_to_master_excel_sheet(
-            filepath=MASTER_EXCEL, sheet_name="SEC activity by month", startrow=8
+            filepath=MASTER_EXCEL, sheet_name="SEC activity by month", startrow=7
         )
 
         transform_sheet(
-            mentor_excels_by_sheet["Other activity by month"], "Other activity by month"
+            mentor_excels_by_sheet["Other activity by month"], header_row=7
         ) >> save_to_master_excel_sheet(
-            filepath=MASTER_EXCEL, sheet_name="Other activity by month", startrow=8
+            filepath=MASTER_EXCEL, sheet_name="Other activity by month", startrow=7
         )
 
         transform_sheet(
-            mentor_excels_by_sheet["Summary"], "Summary"
+            mentor_excels_by_sheet["Summary"], header_row=4
         ) >> save_to_master_excel_sheet(
-            filepath=MASTER_EXCEL, sheet_name="Summary", startrow=5
+            filepath=MASTER_EXCEL, sheet_name="Summary", startrow=4
         )
 
         transform_sheet(
-            mentor_excels_by_sheet["SEC contacts"], "SEC Contacts"
+            mentor_excels_by_sheet["SEC contacts"], header_row=4
         ) >> save_to_master_excel_sheet(
-            filepath=MASTER_EXCEL, sheet_name="SEC contacts", startrow=5
+            filepath=MASTER_EXCEL, sheet_name="SEC contacts", startrow=4
         )
 
     return flow
