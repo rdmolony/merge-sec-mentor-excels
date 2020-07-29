@@ -19,7 +19,12 @@ def get_mentor_excel_filepaths(dirpath: Path) -> List[Path]:
     return [
         file
         for file in dirpath.rglob("*.xlsx")
-        if not any(to_ignore in file.stem for to_ignore in ["test", "~$"])
+        if ("SEC" in file.stem)
+        and ("~$" not in file.stem)
+        and ("(1)" not in file.stem)
+        and ("(2)" not in file.stem)
+        and ("(3)" not in file.stem)
+        and ("html" not in file.stem)
     ]
 
 
