@@ -22,29 +22,20 @@ def mentor_excels_by_sheet() -> Dict[str, pd.DataFrame]:
     return regroup_excels_by_sheet.run(mentor_excels)
 
 
-def test_transform_sec_activity_by_month_sheet(mentor_excels_by_sheet, ref):
+@pytest.mark.parametrize(
+    "sheet_name,header_row,filename",
+    [
+        ("SEC activity by month", 7, "SecActivityByMonth.csv"),
+        ("Other activity by month", 7, "OtherActivityByMonth.csv"),
+        ("Summary", 4, "Summary.csv"),
+        ("SEC contacts", 4, "SecContacts.csv"),
+    ],
+)
+def test_transform_sheet(
+    mentor_excels_by_sheet, sheet_name, header_row, filename
+) -> None:
 
     output = transform_sheet.run(
-        mentor_excels_by_sheet["SEC activity by month"], "Unnamed: 1"
+        mentor_excels_by_sheet[sheet_name], header_row=header_row
     )
-    ref.assertDataFrameCorrect(output, "SecActivityByMonth.csv")
-
-
-def test_transform_other_activity_by_month_sheet(mentor_excels_by_sheet, ref):
-
-    output = transform_sheet.run(
-        mentor_excels_by_sheet["Other activity by month"], "Unnamed: 0"
-    )
-    ref.assertDataFrameCorrect(output, "OtherActivityByMonth.csv")
-
-
-def test_transform_summary_sheet(mentor_excels_by_sheet, ref):
-
-    output = transform_sheet.run(mentor_excels_by_sheet["Summary"], "Summary")
-    ref.assertDataFrameCorrect(output, "Summary.csv")
-
-
-def test_transform_contacts_sheet(mentor_excels_by_sheet, ref):
-
-    output = transform_sheet.run(mentor_excels_by_sheet["SEC contacts"], "SEC Contacts")
-    ref.assertDataFrameCorrect(output, "SecContacts.csv")
+    # ref.assertDataFrameCorrect(output, filename)
