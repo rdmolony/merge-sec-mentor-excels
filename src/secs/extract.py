@@ -18,10 +18,6 @@ def get_mentor_excel_filepaths(dirpath: Path) -> List[Path]:
     # get all excel spreadsheets in mentor dir but the test example ...
     # return [file for file in dirpath.rglob("*.xlsx") if file.stem not in ["test", "$~"]]
 
-    import ipdb
-
-    ipdb.set_trace()
-
     filepaths = [
         filepath
         for filepath in dirpath.rglob("*.xlsx")
