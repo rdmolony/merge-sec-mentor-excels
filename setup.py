@@ -7,26 +7,26 @@ with open("README.md", "r") as fh:
 install_requires = open("requirements.txt").read().strip().split("\n")
 
 setup(
-    name='codema_sec_mentors',
-    packages=find_packages('src'),
-    package_dir={'': 'src'},
-    version='0.0.1',
-    author='Codema',
-    author_email='rowan.molony@codema.ie',
-    description='Codema SEC mentor Project Management code',
+    name="secs",
+    packages=find_packages("src"),
+    package_dir={"": "src"},
+    version="0.0.1",
+    author="Codema",
+    author_email="rowan.molony@codema.ie",
+    description="Codema SEC mentor Project Management code",
     long_description=long_description,
-    long_description_content_type='text/markdown',
-    url='https://github.com/rdmolony/codema_sec_mentors',
+    long_description_content_type="text/markdown",
+    url="https://github.com/rdmolony/codema_sec_mentors",
     classifiers=[
-        'Programming Language :: Python :: 3',
+        "Programming Language :: Python :: 3",
         # 'License :: OSI Approved :: MIT License',
-        'Operating System :: OS Independent',
+        "Operating System :: OS Independent",
     ],
     install_requires=install_requires,
-    python_requires='>=3.6',
+    python_requires=">=3.6",
 )
 
-'''Sources
+"""Sources
     https://packaging.python.org/tutorials/packaging-projects/#setup-py
     Python Testing with Pytest
-    '''
+    """

@@ -1,29 +1,40 @@
+import re
 from pathlib import Path
 from typing import Dict, List
 
-from cytoolz.dicttoolz import merge_with
-
-# from toolz.dicttoolz import merge_with
 import icontract
 import numpy as np
 import pandas as pd
+from cytoolz.dicttoolz import merge_with
 from prefect import task
+import prefect
 
 
 @task
 def get_mentor_excel_filepaths(dirpath: Path) -> List[Path]:
 
-    import ipdb
+    logger = prefect.context.get("logger")
 
-    ipdb.set_trace()
     # get all excel spreadsheets in mentor dir but the test example ...
     # return [file for file in dirpath.rglob("*.xlsx") if file.stem not in ["test", "$~"]]
 
-    return [
-        file
-        for file in dirpath.rglob("*.xlsx")
-        if not any(to_ignore in file.stem for to_ignore in ["test", "~$"])
+    filepaths = [
+        filepath
+        for filepath in dirpath.rglob("*.xlsx")
+        if ("SEC" in filepath.stem)
+        and ("~$" not in filepath.stem)
+        and not bool(
+            re.search(r"\(\d\)", filepath.stem)
+        )  # ignore all SEC(1).xlsx etc. as duplicates...
+        and ("html" not in filepath.stem)
+        and ("invalid" not in filepath.stem)
     ]
+
+    if logger:
+        mentor_excels = [filepath.stem for filepath in filepaths]
+        logger.info(f"\n\nMentor Excels: {mentor_excels}\n\n")
+
+    return filepaths
 
 
 @task
