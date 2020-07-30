@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from secs.extract import get_mentor_excel_filepaths
+from secs.tasks.extract import get_mentor_excel_filepaths
 
 INPUT_DIR = Path(__file__).parent / "input_data"
 MENTOR_DIR = INPUT_DIR / "mentors"

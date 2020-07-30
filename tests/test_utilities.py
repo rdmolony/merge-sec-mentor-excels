@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from secs.utilities import raise_excels_with_invalid_references_in_sheets
+from secs.tasks.utilities import raise_excels_with_invalid_references_in_sheets
 
 INPUT_DIR = Path(__file__).parent / "input_data"
 REFERENCE_DIR = Path(__file__).parent / "reference_data"

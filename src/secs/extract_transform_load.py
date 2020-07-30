@@ -8,14 +8,14 @@ from prefect import Flow, Parameter, unmapped, case
 from prefect_toolkit import run_flow
 
 from secs._filepaths import DATA_DIR, MENTOR_DIR, RESULTS_DIR, TEMPLATE_MASTER_EXCEL
-from secs.extract import (
+from secs.tasks.extract import (
     get_mentor_excel_filepaths,
     read_excel_to_dict,
     regroup_excels_by_sheet,
 )
-from secs.load import SaveDataFrameToExcelSheet
-from secs.transform import transform_sheet
-from secs.utilities import (
+from secs.tasks.load import SaveDataFrameToExcelSheet
+from secs.tasks.transform import transform_sheet
+from secs.tasks.utilities import (
     create_master_excel,
     raise_excels_with_invalid_references_in_sheets,
 )
@@ -40,7 +40,7 @@ def etl() -> Flow:
 
         raise_excels_with_invalid_references_in_sheets.map(
             mentor_filepaths,
-            unmapped(
+            sheet_names=unmapped(
                 [
                     "SEC activity by month",
                     "Other activity by month",

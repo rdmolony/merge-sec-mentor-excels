@@ -7,8 +7,8 @@ import pytest
 from pandas.testing import assert_frame_equal
 from tdda.referencetest.checkpandas import default_csv_loader
 
-from secs.extract import regroup_excels_by_sheet
-from secs.transform import (
+from secs.tasks.extract import regroup_excels_by_sheet
+from secs.tasks.transform import (
     transform_sheet,
     _select_numeric_columns,
     _clean_numeric_columns,

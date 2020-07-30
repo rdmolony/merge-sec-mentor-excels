@@ -7,7 +7,7 @@ import pandas as pd
 import prefect
 from prefect import task
 
-from secs.extract import read_excel_to_dict
+from secs.tasks.extract import read_excel_to_dict
 
 
 @task
@@ -41,3 +41,37 @@ def raise_excels_with_invalid_references_in_sheets(
             logger.error(
                 f"\n\n{sheet_name} in {excel_filepath} contains invalid references!\n\n"
             )
+
+
+def replace_header_with_row(df: pd.DataFrame, header_row: int) -> pd.DataFrame:
+
+    df = df.copy()
+
+    # Convert Excel row number into equiv pandas row number
+    # (i.e. zero indexed and skip one row for header)
+    header_row -= 2
+    new_first_row = header_row + 1
+
+    df.columns = df.iloc[header_row]
+    df = df.iloc[new_first_row:].reset_index(drop=True)
+    df.columns.name = ""
+
+    return df
+
+
+def rename_columns_to_unique_names(df: pd.DataFrame) -> pd.DataFrame:
+
+    df = df.copy()
+    renamer = defaultdict()
+
+    for col in df.columns[df.columns.duplicated(keep=False)].tolist():
+        if col not in renamer:
+            renamer[col] = [col + "_0"]
+        else:
+            renamer[col].append(col + "_" + str(len(renamer[col])))
+
+    return df.rename(
+        columns=lambda column_name: renamer[column_name].pop(0)
+        if column_name in renamer
+        else column_name
+    )

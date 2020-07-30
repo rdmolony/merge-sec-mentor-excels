@@ -9,41 +9,11 @@ import pandas as pd
 import prefect
 from prefect import task
 
-from secs.utilities import dataframe_contains_invalid_references
-
-
-def _replace_header_with_row(df: pd.DataFrame, header_row: int) -> pd.DataFrame:
-
-    df = df.copy()
-
-    # Convert Excel row number into equiv pandas row number
-    # (i.e. zero indexed and skip one row for header)
-    header_row -= 2
-    new_first_row = header_row + 1
-
-    df.columns = df.iloc[header_row]
-    df = df.iloc[new_first_row:].reset_index(drop=True)
-    df.columns.name = ""
-
-    return df
-
-
-def _rename_columns_to_unique_names(df: pd.DataFrame) -> pd.DataFrame:
-
-    df = df.copy()
-    renamer = defaultdict()
-
-    for col in df.columns[df.columns.duplicated(keep=False)].tolist():
-        if col not in renamer:
-            renamer[col] = [col + "_0"]
-        else:
-            renamer[col].append(col + "_" + str(len(renamer[col])))
-
-    return df.rename(
-        columns=lambda column_name: renamer[column_name].pop(0)
-        if column_name in renamer
-        else column_name
-    )
+from secs.tasks.utilities import (
+    dataframe_contains_invalid_references,
+    replace_header_with_row,
+    rename_columns_to_unique_names,
+)
 
 
 def _select_numeric_columns(df: pd.DataFrame, logger: Logger = None) -> List[str]:
@@ -124,8 +94,8 @@ def transform_sheet(
 
     excel_sheets_clean = [
         df.copy()
-        .pipe(_replace_header_with_row, header_row)
-        .pipe(_rename_columns_to_unique_names)
+        .pipe(replace_header_with_row, header_row)
+        .pipe(rename_columns_to_unique_names)
         .replace("?", np.nan)
         .replace(0, np.nan)
         .pipe(_clean_numeric_columns, logger)
