@@ -1,5 +1,6 @@
 import re
 from collections import defaultdict
+from datetime import datetime, date
 from logging import Logger
 from pathlib import Path
 from re import VERBOSE
@@ -84,3 +85,27 @@ def rename_columns_to_unique_names(df: pd.DataFrame) -> pd.DataFrame:
 def get_local_authority_from_filepath(filepath: Path) -> str:
 
     return re.findall(r"SEC - CM - (\w+).xlsx", str(filepath))[0]
+
+
+def get_datetime_from_abbreviated_month(month_name: str) -> datetime:
+    """Translates abbreviated 3-letter month string such as Jan for January etc
+    into a Python datetime object.  This function assumes that the desired
+    date occurs in the current year.
+    
+    Example
+    -------
+    get_datetime_from_abbreviated_month('Jul')
+    >> datetime.datetime(2020, 7, 1, 0, 0)
+
+    Parameters
+    ----------
+    month_name : str
+        The month name; must be abbreviated!
+
+    Returns
+    -------
+    datetime
+        A datetime object corresponding to the first day of the month
+    """
+    year = date.today().strftime("%Y")
+    return datetime.strptime(f"{month_name} {year}", "%b %Y")
