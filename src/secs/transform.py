@@ -1,4 +1,5 @@
 from collections import defaultdict
+from logging import Logger
 from typing import Dict, List
 from re import VERBOSE
 
@@ -45,12 +46,12 @@ def _rename_columns_to_unique_names(df: pd.DataFrame) -> pd.DataFrame:
     )
 
 
-def _select_numeric_columns(df: pd.DataFrame) -> List[str]:
+def _select_numeric_columns(df: pd.DataFrame, logger: Logger = None) -> List[str]:
 
     column_names_numeric = []
     for column_name in df.columns:
 
-        column = df[column_name].copy().dropna()
+        column = df[column_name].copy()
 
         numeric_rows = """
         ^                   # beginning of string
@@ -61,18 +62,24 @@ def _select_numeric_columns(df: pd.DataFrame) -> List[str]:
         (?: [^A-Za-z]+)?    # (optional) not followed by a word
         $                   # end of string
         """
-        number_of_rows_containing_numbers = (
-            column.astype(str).str.contains(numeric_rows, flags=VERBOSE).sum()
+        any_row_contains_a_valid_number = (
+            column.astype(str).str.contains(numeric_rows, flags=VERBOSE).any()
         )
-        number_of_rows = len(column)
-        percentage_numeric_rows = number_of_rows_containing_numbers / number_of_rows
-        if percentage_numeric_rows > 0.5:
+        if any_row_contains_a_valid_number:
             column_names_numeric.append(column_name)
+
+    if logger:
+
+        logger.debug(f"\n\nNumeric column names:\n{column_names_numeric}")
+        column_names_non_numeric = np.setdiff1d(
+            df.columns.to_list(), column_names_numeric
+        )
+        logger.debug(f"\nNon-numeric column names:\n{column_names_non_numeric}")
 
     return column_names_numeric
 
 
-def _clean_numeric_columns(df: pd.DataFrame) -> pd.DataFrame:
+def _clean_numeric_columns(df: pd.DataFrame, logger: Logger = None) -> pd.DataFrame:
 
     column_names_numeric = _select_numeric_columns(df)
     df.loc[:, column_names_numeric] = (
@@ -110,8 +117,10 @@ def _drop_rows_where_first_column_empty(df: pd.DataFrame) -> pd.DataFrame:
 #     "Output cannot contain invalid references!",
 # )
 def transform_sheet(
-    excel_sheets_raw: List[pd.DataFrame], header_row: int, debug=False,
+    excel_sheets_raw: List[pd.DataFrame], header_row: int,
 ) -> pd.DataFrame:
+
+    logger = prefect.context.get("logger")
 
     excel_sheets_clean = [
         df.copy()
@@ -119,16 +128,11 @@ def transform_sheet(
         .pipe(_rename_columns_to_unique_names)
         .replace("?", np.nan)
         .replace(0, np.nan)
-        .pipe(_clean_numeric_columns)
+        .pipe(_clean_numeric_columns, logger)
         .pipe(_drop_rows_where_first_column_empty)
         for df in excel_sheets_raw
     ]
 
     df = pd.concat(excel_sheets_clean).reset_index(drop=True)
-
-    if debug:
-        import ipdb
-
-        ipdb.set_trace()
 
     return df

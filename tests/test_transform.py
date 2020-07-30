@@ -38,9 +38,10 @@ def test_select_numeric_columns() -> List[str]:
             "string_with_numbers": ["Level 1", "Level 2", "Level 3"],
             "addresses": ["18 Castleview Heath", "Unit 5 District", "Howth, D13HW18"],
             "mostly_empty_with_numbers": [np.nan, np.nan, 1],
+            12: [1, 2, 3],
         }
     )
-    expected_output = ["mostly_numbers", "mostly_empty_with_numbers"]
+    expected_output = ["mostly_numbers", "mostly_empty_with_numbers", 12]
 
     output = _select_numeric_columns(input)
     assert output == expected_output

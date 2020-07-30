@@ -2,7 +2,7 @@ import datetime
 
 import prefect
 from pipeop import pipes
-from prefect import Flow, Parameter, unmapped
+from prefect import Flow, Parameter, unmapped, case
 from prefect.utilities.debug import raise_on_exception
 
 from prefect_toolkit import run_flow
@@ -32,6 +32,11 @@ def etl() -> Flow:
     with Flow("Extract, Transform & Load Mentor Excels") as flow:
 
         debug = Parameter("debug", default=False)
+        logger = prefect.context.get("logger")
+        with case(debug, True):
+            logger.setLevel("DEBUG")
+        with case(debug, False):
+            logger.setLevel("INFO")
 
         create_master_excel(TEMPLATE_MASTER_EXCEL, MASTER_EXCEL)
 
@@ -53,18 +58,14 @@ def etl() -> Flow:
         mentor_excels_by_sheet = regroup_excels_by_sheet(mentor_excels)
 
         sec_activities_by_month = transform_sheet(
-            mentor_excels_by_sheet["SEC activity by month"], header_row=7, debug=debug,
+            mentor_excels_by_sheet["SEC activity by month"], header_row=7,
         )
         other_activity_by_month = transform_sheet(
-            mentor_excels_by_sheet["Other activity by month"],
-            header_row=7,
-            debug=debug,
+            mentor_excels_by_sheet["Other activity by month"], header_row=7,
         )
-        summary = transform_sheet(
-            mentor_excels_by_sheet["Summary"], header_row=4, debug=debug
-        )
+        summary = transform_sheet(mentor_excels_by_sheet["Summary"], header_row=4,)
         sec_contacts = transform_sheet(
-            mentor_excels_by_sheet["SEC contacts"], header_row=4, debug=debug
+            mentor_excels_by_sheet["SEC contacts"], header_row=4,
         )
 
         save_to_master_excel_sheet(
