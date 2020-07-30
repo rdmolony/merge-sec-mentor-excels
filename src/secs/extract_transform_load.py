@@ -18,7 +18,6 @@ from secs.tasks.transform import transform_sheet
 from secs.tasks.utilities import (
     create_master_excel,
     raise_excels_with_invalid_references_in_sheets,
-    get_local_authority_name_from_filepath,
 )
 
 TODAY = datetime.datetime.today()
@@ -38,7 +37,6 @@ def etl() -> Flow:
         create_master_excel(TEMPLATE_MASTER_EXCEL, MASTER_EXCEL)
 
         mentor_filepaths = get_mentor_excel_filepaths(MENTOR_DIR)
-        local_authorities = get_local_authority_name_from_filepath.map(mentor_filepaths)
 
         raise_excels_with_invalid_references_in_sheets.map(
             mentor_filepaths,
@@ -56,24 +54,14 @@ def etl() -> Flow:
         mentor_excels_by_sheet = regroup_excels_by_sheet(mentor_excels)
 
         sec_activities_by_month = transform_sheet(
-            mentor_excels_by_sheet["SEC activity by month"],
-            header_row=7,
-            local_authorities=local_authorities,
+            mentor_excels_by_sheet["SEC activity by month"], header_row=7,
         )
         other_activity_by_month = transform_sheet(
-            mentor_excels_by_sheet["Other activity by month"],
-            header_row=7,
-            local_authorities=local_authorities,
+            mentor_excels_by_sheet["Other activity by month"], header_row=7,
         )
-        summary = transform_sheet(
-            mentor_excels_by_sheet["Summary"],
-            header_row=4,
-            local_authorities=local_authorities,
-        )
+        summary = transform_sheet(mentor_excels_by_sheet["Summary"], header_row=4,)
         sec_contacts = transform_sheet(
-            mentor_excels_by_sheet["SEC contacts"],
-            header_row=4,
-            local_authorities=local_authorities,
+            mentor_excels_by_sheet["SEC contacts"], header_row=4,
         )
 
         save_sec_activities = save_to_master_excel_sheet(

@@ -1,8 +1,4 @@
-import re
-from collections import defaultdict
-from logging import Logger
 from pathlib import Path
-from re import VERBOSE
 from shutil import copyfile
 from time import sleep
 from typing import Dict, List
@@ -79,42 +75,3 @@ def rename_columns_to_unique_names(df: pd.DataFrame) -> pd.DataFrame:
         if column_name in renamer
         else column_name
     )
-
-
-@task
-def get_local_authority_name_from_filepath(filepath: Path) -> str:
-
-    return re.findall(r"SEC - CM - (\w+).xlsx", str(filepath))[0]
-
-
-def select_numeric_columns(df: pd.DataFrame, logger: Logger = None) -> List[str]:
-
-    column_names_numeric = []
-    for column_name in df.columns:
-
-        column = df[column_name].copy()
-
-        numeric_rows = """
-        ^                   # beginning of string
-        (?:[^A-Za-z]+ )?    # (optional) not preceded by a word
-        (?:[*,])?           # (optional) preceded by * or *
-        (\d+)               # capture the digits
-        (?:[%])?            # (optional) followed by %
-        (?: [^A-Za-z]+)?    # (optional) not followed by a word
-        $                   # end of string
-        """
-        any_row_contains_a_valid_number = (
-            column.astype(str).str.contains(numeric_rows, flags=VERBOSE).any()
-        )
-        if any_row_contains_a_valid_number:
-            column_names_numeric.append(column_name)
-
-    if logger:
-
-        logger.debug(f"\n\nNumeric column names:\n{column_names_numeric}")
-        column_names_non_numeric = np.setdiff1d(
-            df.columns.to_list(), column_names_numeric
-        )
-        logger.debug(f"\nNon-numeric column names:\n{column_names_non_numeric}")
-
-    return column_names_numeric
