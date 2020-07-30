@@ -76,7 +76,10 @@ def test_transform_sheet(
     mentor_excels_by_sheet, sheet_name, header_row, filename
 ) -> None:
 
+    local_authorities = ["DCC", "DLR"]
     output = transform_sheet.run(
-        mentor_excels_by_sheet[sheet_name], header_row=header_row
+        mentor_excels_by_sheet[sheet_name],
+        header_row=header_row,
+        local_authorities=local_authorities,
     )
     # ref.assertDataFrameCorrect(output, filename)

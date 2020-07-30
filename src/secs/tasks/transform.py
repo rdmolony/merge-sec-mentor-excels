@@ -87,7 +87,7 @@ def _drop_rows_where_first_column_empty(df: pd.DataFrame) -> pd.DataFrame:
 #     "Output cannot contain invalid references!",
 # )
 def transform_sheet(
-    excel_sheets_raw: List[pd.DataFrame], header_row: int,
+    excel_sheets_raw: List[pd.DataFrame], header_row: int, local_authorities: List[str],
 ) -> pd.DataFrame:
 
     logger = prefect.context.get("logger")
@@ -96,11 +96,12 @@ def transform_sheet(
         df.copy()
         .pipe(replace_header_with_row, header_row)
         .pipe(rename_columns_to_unique_names)
+        .assign(local_authority=local_authority)
         .replace("?", np.nan)
         .replace(0, np.nan)
         .pipe(_clean_numeric_columns, logger)
         .pipe(_drop_rows_where_first_column_empty)
-        for df in excel_sheets_raw
+        for df, local_authority in zip(excel_sheets_raw, local_authorities)
     ]
 
     df = pd.concat(excel_sheets_clean).reset_index(drop=True)

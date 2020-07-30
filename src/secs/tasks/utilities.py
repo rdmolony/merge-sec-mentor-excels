@@ -1,6 +1,9 @@
+import re
+from collections import defaultdict
+from logging import Logger
 from pathlib import Path
+from re import VERBOSE
 from shutil import copyfile
-from time import sleep
 from typing import Dict, List
 
 import pandas as pd
@@ -75,3 +78,9 @@ def rename_columns_to_unique_names(df: pd.DataFrame) -> pd.DataFrame:
         if column_name in renamer
         else column_name
     )
+
+
+@task
+def get_local_authority_from_filepath(filepath: Path) -> str:
+
+    return re.findall(r"SEC - CM - (\w+).xlsx", str(filepath))[0]

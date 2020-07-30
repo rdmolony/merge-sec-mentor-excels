@@ -75,6 +75,7 @@ target/
 *.json
 *.csv
 !tests/reference_data/*.csv
+!tests/reference_data/*.xlsx
 
 # exclude all cached files
 .mypy_cache/
