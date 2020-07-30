@@ -1,11 +1,18 @@
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
 
+import numpy as np
 import pandas as pd
 import pytest
+from pandas.testing import assert_frame_equal
 from tdda.referencetest.checkpandas import default_csv_loader
+
 from secs.extract import regroup_excels_by_sheet
-from secs.transform import transform_sheet
+from secs.transform import (
+    transform_sheet,
+    _select_numeric_columns,
+    _clean_numeric_columns,
+)
 
 INPUT_DIR = Path(__file__).parent / "input_data"
 REFERENCE_DIR = Path(__file__).parent / "reference_data"
@@ -20,6 +27,39 @@ def mentor_excels_by_sheet() -> Dict[str, pd.DataFrame]:
     mentor_excels = [mentor_excel, mentor_excel]
 
     return regroup_excels_by_sheet.run(mentor_excels)
+
+
+def test_select_numeric_columns() -> List[str]:
+
+    input = pd.DataFrame(
+        {
+            "mostly_numbers": [",4", "6!", 1],
+            "not_number_column": ["SEC blah", "SEC2", "Hi"],
+            "string_with_numbers": ["Level 1", "Level 2", "Level 3"],
+            "addresses": ["18 Castleview Heath", "Unit 5 District", "Howth, D13HW18"],
+            "mostly_empty_with_numbers": [np.nan, np.nan, 1],
+        }
+    )
+    expected_output = ["mostly_numbers", "mostly_empty_with_numbers"]
+
+    output = _select_numeric_columns(input)
+    assert output == expected_output
+
+
+def test_clean_numeric_columns() -> List[str]:
+
+    input = pd.DataFrame(
+        {
+            "dirty_col": [",4", "6!", " ", 1, "", "None", 2],
+            "clean_col": [1, 2, 3, 4, 5, 6, 7],
+        }
+    )
+    expected_output = pd.DataFrame(
+        {"dirty_col": [4, 6, 0, 1, 0, 0, 2], "clean_col": [1, 2, 3, 4, 5, 6, 7]},
+    ).convert_dtypes()
+    output = _clean_numeric_columns(input)
+
+    assert_frame_equal(output, expected_output)
 
 
 @pytest.mark.parametrize(
