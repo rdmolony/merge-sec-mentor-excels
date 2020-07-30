@@ -1,9 +1,9 @@
 import datetime
+import os
 
 import prefect
 from pipeop import pipes
 from prefect import Flow, Parameter, unmapped, case
-from prefect.utilities.debug import raise_on_exception
 
 from prefect_toolkit import run_flow
 
@@ -13,7 +13,7 @@ from secs.extract import (
     read_excel_to_dict,
     regroup_excels_by_sheet,
 )
-from secs.load import save_to_master_excel_sheet
+from secs.load import SaveDataFrameToExcelSheet
 from secs.transform import transform_sheet
 from secs.utilities import (
     create_master_excel,
@@ -26,17 +26,13 @@ ONE_MONTH_AGO = TODAY - datetime.timedelta(days=30)
 MASTER_EXCEL = RESULTS_DIR / f"master-{TODAY.strftime('%d-%m-%Y')}.xlsx"
 
 
-@pipes
+save_to_master_excel_sheet = SaveDataFrameToExcelSheet()
+
+
 def etl() -> Flow:
 
+    os.environ["PREFECT__LOGGING__LEVEL"] = "DEBUG"
     with Flow("Extract, Transform & Load Mentor Excels") as flow:
-
-        debug = Parameter("debug", default=False)
-        logger = prefect.context.get("logger")
-        with case(debug, True):
-            logger.setLevel("DEBUG")
-        with case(debug, False):
-            logger.setLevel("INFO")
 
         create_master_excel(TEMPLATE_MASTER_EXCEL, MASTER_EXCEL)
 
@@ -68,23 +64,35 @@ def etl() -> Flow:
             mentor_excels_by_sheet["SEC contacts"], header_row=4,
         )
 
-        save_to_master_excel_sheet(
+        save_sec_activities = save_to_master_excel_sheet(
             sec_activities_by_month,
             filepath=MASTER_EXCEL,
             sheet_name="SEC activity by month",
             startrow=7,
         )
-        save_to_master_excel_sheet(
+
+        save_other_activities = save_to_master_excel_sheet(
             other_activity_by_month,
             filepath=MASTER_EXCEL,
             sheet_name="Other activity by month",
             startrow=7,
+            upstream_tasks=[save_sec_activities],
         )
-        save_to_master_excel_sheet(
-            summary, filepath=MASTER_EXCEL, sheet_name="Summary", startrow=4
+
+        save_summary = save_to_master_excel_sheet(
+            summary,
+            filepath=MASTER_EXCEL,
+            sheet_name="Summary",
+            startrow=4,
+            upstream_tasks=[save_other_activities],
         )
-        save_to_master_excel_sheet(
-            sec_contacts, filepath=MASTER_EXCEL, sheet_name="SEC contacts", startrow=4
+
+        save_sec_contacts = save_to_master_excel_sheet(
+            sec_contacts,
+            filepath=MASTER_EXCEL,
+            sheet_name="SEC contacts",
+            startrow=4,
+            upstream_tasks=[save_summary],
         )
 
     return flow
