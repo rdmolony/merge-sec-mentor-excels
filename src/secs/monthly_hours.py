@@ -13,14 +13,8 @@ from secs.tasks.hours import (
     calculate_monthly_sec_activity_days,
     get_planned_and_achieved_totals,
 )
-from secs.tasks.load import (
-    SaveDataFrameToExcelSheet,
-    SaveDataFramesToExcel,
-    SaveDictDataFramesToExcel,
-)
+from secs.tasks.load import SaveDictDataFramesToExcel
 
-save_to_master_excel_sheet = SaveDataFrameToExcelSheet()
-save_dataframes_to_excel_sheets = SaveDataFramesToExcel()
 save_dict_of_dataframes_to_excel_sheets = SaveDictDataFramesToExcel()
 
 MASTER_EXCEL = RESULTS_DIR / "master-31-07-2020.xlsx"

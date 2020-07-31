@@ -80,10 +80,6 @@ def calculate_monthly_sec_activity_days(
     sec_activities: pd.DataFrame, month: datetime
 ) -> Tuple[pd.DataFrame]:
 
-    import ipdb
-
-    ipdb.set_trace()
-
     monthly_hours = _extract_sec_activity_hours_for_month(sec_activities, month)
     planned, achieved = _split_sec_activity_hours_for_month(monthly_hours)
 

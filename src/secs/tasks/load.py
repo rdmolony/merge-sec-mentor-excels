@@ -40,8 +40,8 @@ class SaveDataFrameToExcelSheet(prefect.Task):
 
 
 class SaveDataFramesToExcel(prefect.Task):
-    """A Prefect Task that saves a dictionary of pandas DataFrames to 
-    corresponding sheets in an Excel Workbook
+    """A Prefect Task that saves a sequence of pandas DataFrames to 
+    corresponding sheets in an Excel Workbook at a specific header row 
 
     Parameters
     ----------
@@ -55,15 +55,16 @@ class SaveDataFramesToExcel(prefect.Task):
         sheet_names: Tuple[str],
         header_rows: Tuple[int],
     ) -> None:
-        """Saves each DataFrame in dfs to an Excel Workbook sheet corresponding 
-        to the Dict key.  
+        """Saves a sequence of pandas DataFrames to 
+        corresponding sheets in a sequence of sheet names in an Excel Workboo 
 
         Parameters
         ----------
-        dfs : Dict[str, pd.DataFrame]
+        dfs : Tuple[pd.DataFrame]
         filepath : Path
-        startrow : Dict[str, int], optional
-            The Upper left cell row to dump each sheet's DataFrame, by default None
+        sheet_names: Tuple[str]
+        startrow : Tuple[int]
+            The Upper left cell row to dump each sheet's DataFrame
         """
 
         book = load_workbook(filepath)
@@ -75,6 +76,39 @@ class SaveDataFramesToExcel(prefect.Task):
 
             df.to_excel(
                 writer, sheet_name=sheet_name, startrow=header_row, index=False,
+            )
+
+        writer.save()
+
+
+class SaveDictDataFramesToExcel(prefect.Task):
+    """A Prefect Task that saves a dictionary of pandas DataFrames to 
+    corresponding sheets in an Excel Workbook
+
+    Parameters
+    ----------
+    Task : prefect.Task
+    """
+
+    def run(self, dfs: Dict[str, pd.DataFrame], filepath: Path,) -> None:
+        """Saves each DataFrame in Dict of DataFrames to an Excel Workbook 
+        sheet corresponding to the Dict key.  
+
+        Parameters
+        ----------
+        dfs : Dict[str, pd.DataFrame]
+        filepath : Path
+        """
+
+        book = load_workbook(filepath)
+        writer = pd.ExcelWriter(filepath, engine="openpyxl")
+        writer.book = book
+        writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
+
+        for sheet_name, df in dfs.items():
+
+            df.to_excel(
+                writer, sheet_name=sheet_name, index=False,
             )
 
         writer.save()
