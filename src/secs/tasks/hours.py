@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Tuple, List
+from typing import Tuple, List, Dict
 
 import numpy as np
 import pandas as pd
@@ -18,7 +18,7 @@ def _extract_sec_activity_hours_for_month(
     from_column = column_index - 1  # County Mentor col occurs 1 before date
     to_column = column_index + 9  # Plan & Do for month is 10 columns
 
-    all_hours = activities.copy().pipe(replace_header_with_row, header_row=7)
+    all_hours = activities.copy().pipe(replace_header_with_row, header_row=8)
 
     return (
         all_hours.copy()
@@ -80,15 +80,15 @@ def calculate_monthly_sec_activity_days(
     sec_activities: pd.DataFrame, month: datetime
 ) -> Tuple[pd.DataFrame]:
 
+    import ipdb
+
+    ipdb.set_trace()
+
     monthly_hours = _extract_sec_activity_hours_for_month(sec_activities, month)
     planned, achieved = _split_sec_activity_hours_for_month(monthly_hours)
 
     planned_total = _calculate_sec_activities_total(planned)
     achieved_total = _calculate_sec_activities_total(achieved)
-
-    import ipdb
-
-    ipdb.set_trace()
 
     return {"planned": planned_total, "achieved": achieved_total}
 
@@ -103,7 +103,7 @@ def _extract_other_activity_hours_for_month(
     from_column = column_index - 1  # County Mentor col occurs 1 before date
     to_column = column_index + 4  # Plan & Do for month is 5 columns
 
-    all_hours = activities.copy().pipe(replace_header_with_row, header_row=7)
+    all_hours = activities.copy().pipe(replace_header_with_row, header_row=8)
 
     return (
         all_hours.copy()
@@ -163,6 +163,7 @@ def _calculate_other_activities_total(activities: pd.DataFrame,) -> pd.DataFrame
     return (
         activities.copy()
         .assign(mentor=lambda df: df["mentor"].fillna(df["local_authority"]))
+        .convert_dtypes()
         .pivot_table(index="mentor", values=["total"])
         .reset_index()
     )
@@ -178,5 +179,28 @@ def calculate_monthly_other_activity_days(
 
     planned_total = _calculate_other_activities_total(planned)
     achieved_total = _calculate_other_activities_total(achieved)
+
+    return {"planned": planned_total, "achieved": achieved_total}
+
+
+@task
+def get_planned_and_achieved_totals(
+    sec_hours: Dict[str, pd.DataFrame], other_hours: Dict[str, pd.DataFrame]
+) -> Dict[str, pd.DataFrame]:
+
+    planned_total = pd.merge(
+        left=sec_hours["planned"],
+        right=other_hours["planned"],
+        on="mentor",
+        how="outer",
+        suffixes=(" sec activities", " other activities"),
+    )
+    achieved_total = pd.merge(
+        left=sec_hours["achieved"],
+        right=other_hours["achieved"],
+        on="mentor",
+        how="outer",
+        suffixes=(" sec activities", " other activities"),
+    )
 
     return {"planned": planned_total, "achieved": achieved_total}

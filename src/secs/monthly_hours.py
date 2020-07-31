@@ -11,16 +11,22 @@ from secs.tasks.extract import read_excel_to_dict
 from secs.tasks.hours import (
     calculate_monthly_other_activity_days,
     calculate_monthly_sec_activity_days,
+    get_planned_and_achieved_totals,
 )
-from secs.tasks.load import SaveDataFrameToExcelSheet, SaveDataFramesToExcel
+from secs.tasks.load import (
+    SaveDataFrameToExcelSheet,
+    SaveDataFramesToExcel,
+    SaveDictDataFramesToExcel,
+)
 
 save_to_master_excel_sheet = SaveDataFrameToExcelSheet()
 save_dataframes_to_excel_sheets = SaveDataFramesToExcel()
+save_dict_of_dataframes_to_excel_sheets = SaveDictDataFramesToExcel()
 
 MASTER_EXCEL = RESULTS_DIR / "master-31-07-2020.xlsx"
 
 
-def fees() -> Flow:
+def hours() -> Flow:
 
     master_excel = MASTER_EXCEL
     os.environ["PREFECT__LOGGING__LEVEL"] = "DEBUG"
@@ -33,13 +39,13 @@ def fees() -> Flow:
         sec_hours = calculate_monthly_sec_activity_days(
             master_excel_sheets["SEC activity by month"], month=month,
         )
-        planned_sec = sec_hours["planned"]
-        achieved_sec = sec_hours["achieved"]
 
         other_hours = calculate_monthly_other_activity_days(
             master_excel_sheets["Other activity by month"], month=month,
         )
-        planned_other = other_hours["planned"]
-        achieved_other = other_hours["achieved"]
+
+        monthly_totals = get_planned_and_achieved_totals(sec_hours, other_hours)
+
+        save_dict_of_dataframes_to_excel_sheets(monthly_totals, filepath=master_excel)
 
     return flow
