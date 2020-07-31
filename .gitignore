@@ -74,6 +74,7 @@ target/
 *.txt
 *.json
 *.csv
+*.xlsx
 !tests/reference_data/*.csv
 !tests/reference_data/*.xlsx
 
