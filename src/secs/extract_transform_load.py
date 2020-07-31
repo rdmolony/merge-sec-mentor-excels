@@ -4,8 +4,8 @@ from pathlib import Path
 
 import prefect
 from pipeop import pipes
-from prefect import Flow, Parameter, unmapped, case
-
+from prefect import Flow, Parameter, unmapped
+from prefect.tasks.core.constants import Constant
 from prefect_toolkit import run_flow
 
 from secs._filepaths import DATA_DIR, MENTOR_DIR, RESULTS_DIR, TEMPLATE_MASTER_EXCEL
@@ -14,12 +14,12 @@ from secs.tasks.extract import (
     read_excel_to_dict,
     regroup_excels_by_sheet,
 )
-from secs.tasks.load import SaveDataFrameToExcelSheet, SaveDataFramesToExcel
+from secs.tasks.load import SaveDataFramesToExcel, SaveDataFrameToExcelSheet
 from secs.tasks.transform import transform_sheet
 from secs.tasks.utilities import (
     create_master_excel,
-    raise_excels_with_invalid_references_in_sheets,
     get_local_authority_from_filepath,
+    raise_excels_with_invalid_references_in_sheets,
 )
 
 TODAY = datetime.datetime.today()
@@ -40,18 +40,25 @@ def etl() -> Flow:
         template_master_excel: Path = Parameter(
             "template", default=TEMPLATE_MASTER_EXCEL
         )
-        master_excel: Path = Parameter("master", default=MASTER_EXCEL)
-        mentor_dir: Path = Parameter("mentor_dir", default=MENTOR_DIR)
+        master_excel: Path = Parameter(
+            "master", default=MASTER_EXCEL,
+        )
+        mentor_dir: Path = Parameter(
+            "mentor_dir", default=MENTOR_DIR,
+        )
 
         create_master_excel(template_master_excel, master_excel)
 
-        sheet_names = (
-            "SEC activity by month",
-            "Other activity by month",
-            "Summary",
-            "SEC contacts",
+        sheet_names = Constant(
+            (
+                "SEC activity by month",
+                "Other activity by month",
+                "Summary",
+                "SEC contacts",
+            ),
+            name="Master Excel Sheet Names",
         )
-        header_rows = (7, 7, 4, 4)
+        header_rows = Constant((7, 7, 4, 4), name="Header rows for each sheet")
 
         mentor_filepaths = get_mentor_excel_filepaths(mentor_dir)
 
