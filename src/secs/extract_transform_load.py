@@ -14,7 +14,7 @@ from secs.tasks.extract import (
     read_excel_to_dict,
     regroup_excels_by_sheet,
 )
-from secs.tasks.load import SaveDataFrameToExcelSheet
+from secs.tasks.load import SaveDataFrameToExcelSheet, SaveDataFramesToExcel
 from secs.tasks.transform import transform_sheet
 from secs.tasks.utilities import (
     create_master_excel,
@@ -29,6 +29,7 @@ MASTER_EXCEL = RESULTS_DIR / f"master-{TODAY.strftime('%d-%m-%Y')}.xlsx"
 
 
 save_to_master_excel_sheet = SaveDataFrameToExcelSheet()
+save_dataframes_to_excel_sheets = SaveDataFramesToExcel()
 
 
 def etl() -> Flow:
@@ -44,74 +45,36 @@ def etl() -> Flow:
 
         create_master_excel(template_master_excel, master_excel)
 
+        sheet_names = (
+            "SEC activity by month",
+            "Other activity by month",
+            "Summary",
+            "SEC contacts",
+        )
+        header_rows = (7, 7, 4, 4)
+
         mentor_filepaths = get_mentor_excel_filepaths(mentor_dir)
 
         raise_excels_with_invalid_references_in_sheets.map(
-            mentor_filepaths,
-            sheet_names=unmapped(
-                [
-                    "SEC activity by month",
-                    "Other activity by month",
-                    "Summary",
-                    "SEC contacts",
-                ]
-            ),
+            mentor_filepaths, sheet_names=unmapped(sheet_names),
         )
 
         local_authorities = get_local_authority_from_filepath.map(mentor_filepaths)
-        mentor_excels = read_excel_to_dict.map(mentor_filepaths)
-        mentor_excels_by_sheet = regroup_excels_by_sheet(mentor_excels)
+        mentor_excels_raw = read_excel_to_dict.map(mentor_filepaths)
+        mentor_excels_by_sheet = regroup_excels_by_sheet(mentor_excels_raw)
 
-        sec_activities_by_month = transform_sheet(
-            mentor_excels_by_sheet["SEC activity by month"],
-            header_row=7,
-            local_authorities=local_authorities,
-        )
-        other_activity_by_month = transform_sheet(
-            mentor_excels_by_sheet["Other activity by month"],
-            header_row=7,
-            local_authorities=local_authorities,
-        )
-        summary = transform_sheet(
-            mentor_excels_by_sheet["Summary"],
-            header_row=4,
-            local_authorities=local_authorities,
-        )
-        sec_contacts = transform_sheet(
-            mentor_excels_by_sheet["SEC contacts"],
-            header_row=4,
-            local_authorities=local_authorities,
+        mentor_excels_clean = transform_sheet.map(
+            unmapped(mentor_excels_by_sheet),
+            sheet_names,
+            header_row=header_rows,
+            local_authorities=unmapped(local_authorities),
         )
 
-        save_sec_activities = save_to_master_excel_sheet(
-            sec_activities_by_month,
+        save_dataframes_to_excel_sheets(
+            dfs=mentor_excels_clean,
             filepath=master_excel,
-            sheet_name="SEC activity by month",
-            startrow=7,
-        )
-
-        save_other_activities = save_to_master_excel_sheet(
-            other_activity_by_month,
-            filepath=master_excel,
-            sheet_name="Other activity by month",
-            startrow=7,
-            upstream_tasks=[save_sec_activities],
-        )
-
-        save_summary = save_to_master_excel_sheet(
-            summary,
-            filepath=master_excel,
-            sheet_name="Summary",
-            startrow=4,
-            upstream_tasks=[save_other_activities],
-        )
-
-        save_sec_contacts = save_to_master_excel_sheet(
-            sec_contacts,
-            filepath=master_excel,
-            sheet_name="SEC contacts",
-            startrow=4,
-            upstream_tasks=[save_summary],
+            sheet_names=sheet_names,
+            header_rows=header_rows,
         )
 
     return flow

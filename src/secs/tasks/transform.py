@@ -82,17 +82,18 @@ def _drop_rows_where_first_column_empty(df: pd.DataFrame) -> pd.DataFrame:
 
 @task
 @icontract.ensure(lambda result: not result.empty, "Output cannot be empty!")
-# @icontract.ensure(
-#     lambda result: dataframe_contains_invalid_references(result),
-#     "Output cannot contain invalid references!",
-# )
 def transform_sheet(
-    excel_sheets_raw: List[pd.DataFrame], header_row: int, local_authorities: List[str],
+    mentor_excels: Dict[str, pd.DataFrame],
+    sheet_name: str,
+    header_row: int,
+    local_authorities: List[str],
 ) -> pd.DataFrame:
 
     logger = prefect.context.get("logger")
 
-    excel_sheets_clean = [
+    sheet_data_raw = mentor_excels[sheet_name]
+
+    sheet_data_clean = [
         df.copy()
         .pipe(replace_header_with_row, header_row)
         .pipe(rename_columns_to_unique_names)
@@ -101,9 +102,9 @@ def transform_sheet(
         .replace(0, np.nan)
         .pipe(_clean_numeric_columns, logger)
         .pipe(_drop_rows_where_first_column_empty)
-        for df, local_authority in zip(excel_sheets_raw, local_authorities)
+        for df, local_authority in zip(sheet_data_raw, local_authorities)
     ]
 
-    df = pd.concat(excel_sheets_clean).reset_index(drop=True)
+    df = pd.concat(sheet_data_clean).reset_index(drop=True)
 
     return df
