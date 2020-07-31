@@ -7,13 +7,17 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
 
-from secs.tasks.utilities import get_datetime_from_abbreviated_month
 from secs.tasks.hours import (
+    _calculate_sec_activities_total,
+    _calculate_other_activities_total,
+    _extract_other_activity_hours_for_month,
     _extract_sec_activity_hours_for_month,
+    _split_other_activity_hours_for_month,
     _split_sec_activity_hours_for_month,
     calculate_monthly_other_activity_days,
     calculate_monthly_sec_activity_days,
 )
+from secs.tasks.utilities import get_datetime_from_abbreviated_month
 
 INPUT_DIR = Path(__file__).parent / "input_data"
 REFERENCE_DIR = Path(__file__).parent / "reference_data"
@@ -29,20 +33,66 @@ def master_excel() -> Dict[str, pd.DataFrame]:
 
 def test_extract_sec_activity_hours_for_month(master_excel, ref) -> None:
 
-    month = get_datetime_from_abbreviated_month("Mar")
+    month = datetime.strptime(f"Mar 2020", "%b %Y")
     output = _extract_sec_activity_hours_for_month(
         master_excel["SEC activity by month"], month
     )
 
-    filepath = REFERENCE_DIR / "ExtractSecHoursMar.csv"
-    ref.assertDataFrameCorrect(output, filepath)
+    # ref.assertDataFrameCorrect(output, filepath)
 
 
-def test_split_sec_activity_hours_for_month(ref) -> None:
+def test_split_sec_activity_hours_for_month(master_excel, ref) -> None:
 
-    filepath = REFERENCE_DIR / "ExtractSecHoursMar.csv"
-    activities_for_month = pd.read_csv(filepath)
+    month = datetime.strptime(f"Mar 2020", "%b %Y")
+    monthly_hours = _extract_sec_activity_hours_for_month(
+        master_excel["SEC activity by month"], month
+    )
+    _split_sec_activity_hours_for_month(monthly_hours)
 
-    planned, achieved = _split_sec_activity_hours_for_month(activities_for_month)
+    # ref.assertDataFrameCorrect(output, filepath)
 
-    ref.assertDataFrameCorrect(output, filepath)
+
+def test_calculate_monthly_sec_activity_days(master_excel, ref) -> None:
+
+    month = datetime.strptime(f"Mar 2020", "%b %Y")
+
+    calculate_monthly_sec_activity_days.run(
+        master_excel["SEC activity by month"], month
+    )
+
+
+def test_extract_other_activity_hours_for_month(master_excel, ref) -> None:
+
+    month = datetime.strptime(f"Mar 2020", "%b %Y")
+    _extract_other_activity_hours_for_month(
+        master_excel["Other activity by month"], month
+    )
+
+
+def test_split_other_activity_hours_for_month(master_excel, ref) -> None:
+
+    month = datetime.strptime(f"Mar 2020", "%b %Y")
+    monthly_hours = _extract_other_activity_hours_for_month(
+        master_excel["Other activity by month"], month
+    )
+    _split_other_activity_hours_for_month(monthly_hours)
+
+
+def test_split_other_activity_hours_for_month(master_excel, ref) -> None:
+
+    month = datetime.strptime(f"Mar 2020", "%b %Y")
+    monthly_hours = _extract_other_activity_hours_for_month(
+        master_excel["Other activity by month"], month
+    )
+    planned, achieved = _split_other_activity_hours_for_month(monthly_hours)
+
+    _calculate_other_activities_total(planned)
+
+
+def test_calculate_monthly_other_activity_days(master_excel, ref) -> None:
+
+    month = datetime.strptime(f"Mar 2020", "%b %Y")
+
+    calculate_monthly_other_activity_days.run(
+        master_excel["Other activity by month"], month
+    )
